@@ -1,0 +1,16 @@
+base: ../base.yaml
+
+model:
+  name: bert-base-uncased
+  adapter: null
+
+data:
+  dataset: glue/mrpc
+  batch_size: 32
+
+training:
+  epochs: 5
+  learning_rate: 2e-5
+
+tracking:
+  tags: [bert, mrpc, baseline]

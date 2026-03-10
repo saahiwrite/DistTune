@@ -1,0 +1,31 @@
+seed: 42
+
+model:
+  name: bert-base-uncased
+  adapter: null
+
+data:
+  dataset: glue/mrpc
+  max_length: 512
+  batch_size: 32
+
+training:
+  epochs: 10
+  learning_rate: 2e-5
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  mixed_precision: fp16
+  gradient_accumulation_steps: 1
+  warmup_ratio: 0.1
+  metric_for_best_model: eval/loss
+
+distributed:
+  strategy: ddp
+  find_unused_parameters: false
+
+tracking:
+  backends: [mlflow, wandb]
+  project: disttune
+  tags: []
+
+output_dir: ./outputs
