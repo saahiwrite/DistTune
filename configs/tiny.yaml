@@ -1,0 +1,5 @@
+epochs: 1
+samples: 128
+seq: 24
+batch_size: 16
+lr: 0.0003

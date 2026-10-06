@@ -1,81 +1,30 @@
-# 🚀 DistTune — Distributed Training Framework for Multi-GPU Fine-Tuning
+# Distributed LLM Training Infrastructure
+A compact but real PyTorch training stack demonstrating the mechanics used in multi-GPU transformer training: `torchrun`, DistributedDataParallel, `DistributedSampler`, rank-aware device assignment, gradient clipping, throughput measurement, reproducible configs, MLflow logging, and Optuna tuning.
 
-A scalable distributed training framework for multi-GPU model fine-tuning with automated experiment tracking (MLflow & Weights & Biases) and hyperparameter optimization (Optuna).
-
-> **Status:** 🚧 In Progress
-
----
-
-## Features
-
-- **Multi-GPU Distributed Training** — PyTorch DistributedDataParallel (DDP) and FSDP support
-- **Experiment Tracking** — Unified logging to MLflow and Weights & Biases
-- **Hyperparameter Optimization** — Optuna-based search across 50+ configurations
-- **Config-Driven Workflows** — YAML-based experiment definitions
-- **Checkpoint Management** — Auto-save, resume, and best-model selection
-- **Mixed Precision** — Native AMP support for faster training
-- **Modular Architecture** — Swap models, datasets, and optimizers via config
-
-## Quick Start
-
-### Installation
-
+## Run CPU/single process
 ```bash
-git clone https://github.com/<your-username>/disttune.git
-cd disttune
-pip install -e ".[dev]"
+pip install -e .
+python train.py --config configs/tiny.yaml
+pytest -q
 ```
 
-### Single-GPU Training
-
+## Run multi-GPU
 ```bash
-python scripts/train.py --config configs/experiments/bert_finetune.yaml
+torchrun --standalone --nproc_per_node=4 train.py --config configs/gpu.yaml
 ```
+The code automatically initializes NCCL on CUDA and Gloo otherwise, binds each process to `LOCAL_RANK`, wraps the model in DDP, and partitions data with `DistributedSampler`.
 
-### Multi-GPU Training (DDP)
-
+## Experiment tracking / tuning
 ```bash
-torchrun --nproc_per_node=4 scripts/train.py --config configs/experiments/bert_finetune.yaml
+pip install -r requirements-mlops.txt
+mlflow ui
+python scripts/mlflow_train.py
+python scripts/optuna_search.py
 ```
+W&B can be integrated at the same metric emission point in `src/trainer.py` without changing training semantics.
 
-### Hyperparameter Sweep
+## Why a tiny transformer is included
+CI should verify distributed-training logic without downloading a multi-billion-parameter model. The model is deliberately small, while the DDP lifecycle, optimizer path, sampler, device mapping and launch command are the same patterns used for larger Hugging Face models.
 
-```bash
-python scripts/sweep.py --config configs/sweep.yaml --n-trials 50
-```
-
-### Tracking Dashboards
-
-```bash
-# MLflow
-mlflow ui --port 5000
-
-# Weights & Biases — results auto-sync to your W&B project
-```
-
-## Configuration
-
-Experiments are defined in YAML. See `configs/` for examples.
-
-## Development
-
-```bash
-make install    # Install with dev dependencies
-make test       # Run test suite
-make lint       # Ruff + mypy
-make format     # Ruff format
-```
-
-## Roadmap
-
-- [x] Core DDP training loop
-- [x] MLflow + W&B unified tracking
-- [x] Optuna hyperparameter sweeps
-- [ ] FSDP support for large models
-- [ ] DeepSpeed integration
-- [ ] Elastic training (fault tolerance)
-- [ ] Multi-node training support
-
-## License
-
-MIT
+## Resume result
+The resume reports a 35% training-time reduction from optimizing transformer training across multi-GPU CUDA environments. That number is an **original project benchmark**, not a number synthesized by this repository. Use `elapsed_s` and `steps_per_s` to regenerate scaling curves on the original hardware and model.
